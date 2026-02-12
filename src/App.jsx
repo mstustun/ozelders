@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -20,7 +21,18 @@ const RoleBasedRedirect = () => {
     )
   }
 
-  if (profile?.role === 'teacher') {
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/60">Profil bilgisi bulunamadı.</p>
+          <a href="/login" className="text-indigo-400 hover:text-indigo-300 mt-2 inline-block">Giriş sayfasına dön</a>
+        </div>
+      </div>
+    )
+  }
+
+  if (profile.role === 'teacher') {
     return <Navigate to="/teacher" replace />
   }
   return <Navigate to="/student" replace />
@@ -30,6 +42,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <Navbar />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />

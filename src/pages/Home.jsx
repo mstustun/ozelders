@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isSupabaseConfigured } from '../lib/supabase'
 
@@ -19,12 +19,9 @@ const Home = () => {
     // Redirect logged-in users to their dashboard
     if (user && profile) {
         if (profile.role === 'teacher') {
-            window.location.href = '/teacher'
-            return null
-        } else {
-            window.location.href = '/student'
-            return null
+            return <Navigate to="/teacher" replace />
         }
+        return <Navigate to="/student" replace />
     }
 
     return (

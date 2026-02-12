@@ -10,6 +10,17 @@ export const isSupabaseConfigured = supabaseUrl &&
     !supabaseAnonKey.includes('your-supabase')
 
 // Create a mock client if not configured to prevent crashes
+const createChainableResult = (result = { data: [], error: null }) => {
+    const chainable = () => new Proxy({}, {
+        get: (_, prop) => {
+            if (prop === 'then') return undefined // not a promise
+            if (['data', 'error'].includes(prop)) return result[prop]
+            return (..._args) => chainable()
+        }
+    })
+    return chainable()
+}
+
 const createMockClient = () => ({
     auth: {
         getSession: async () => ({ data: { session: null }, error: null }),
@@ -18,15 +29,7 @@ const createMockClient = () => ({
         signInWithPassword: async () => { throw new Error('Supabase not configured') },
         signOut: async () => ({ error: null }),
     },
-    from: () => ({
-        select: () => ({
-            eq: () => ({
-                order: () => ({ data: [], error: null }),
-                single: () => ({ data: null, error: null }),
-            }),
-        }),
-        insert: () => ({ data: null, error: null }),
-    }),
+    from: () => createChainableResult(),
 })
 
 export const supabase = isSupabaseConfigured

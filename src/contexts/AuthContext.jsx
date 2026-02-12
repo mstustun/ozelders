@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
@@ -16,15 +16,37 @@ export const AuthProvider = ({ children }) => {
     const [profile, setProfile] = useState(null)
     const [loading, setLoading] = useState(true)
 
+    const fetchProfile = useCallback(async (userId) => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single()
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error fetching profile:', error)
+            }
+            setProfile(data)
+        } catch (error) {
+            console.error('Error fetching profile:', error)
+        }
+    }, [])
+
     useEffect(() => {
         // Get initial session
         const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                await fetchProfile(session.user.id)
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                setUser(session?.user ?? null)
+                if (session?.user) {
+                    await fetchProfile(session.user.id)
+                }
+            } catch (error) {
+                console.error('Error getting session:', error)
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
 
         getSession()
@@ -43,24 +65,7 @@ export const AuthProvider = ({ children }) => {
         )
 
         return () => subscription.unsubscribe()
-    }, [])
-
-    const fetchProfile = async (userId) => {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single()
-
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching profile:', error)
-            }
-            setProfile(data)
-        } catch (error) {
-            console.error('Error fetching profile:', error)
-        }
-    }
+    }, [fetchProfile])
 
     const signUp = async (email, password, fullName, role = 'student') => {
         const { data, error } = await supabase.auth.signUp({
